@@ -8,16 +8,20 @@
 
 import UIKit
 import AVFoundation
+import CoreMotion
 
 class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDelegate {
     @IBOutlet weak var imageView: UIImageView!
+    @IBOutlet weak var arrowImageView: UIImageView!
     
     var mySession: AVCaptureSession!
     var myDevice: AVCaptureDevice!
     var myOutput: AVCaptureVideoDataOutput!
     
-    // 顔検出オブジェクト
     let detector = Detector()
+    let motionManager: CMMotionManager = CMMotionManager()
+    
+    private var isGestureEnabled: Bool = true
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -25,6 +29,18 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         if initCamera() {
             mySession.startRunning()
         }
+        
+        motionManager.deviceMotionUpdateInterval = 0.05
+        // Start motion data acquisition
+        motionManager.startDeviceMotionUpdatesToQueue( NSOperationQueue.currentQueue(), withHandler:{
+            deviceManager, error in
+            var accel: CMAcceleration = deviceManager.userAcceleration
+            if pow(accel.x, 2) + pow(accel.y, 2) + pow(accel.z, 2) > 1 / 100 {
+                self.isGestureEnabled = false
+            } else {
+                self.isGestureEnabled = true
+            }
+        })
     }
 
     override func didReceiveMemoryWarning() {
@@ -99,12 +115,22 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             // UIImageへ変換
             var image: UIImage = CameraUtil.imageFromSampleBuffer(sampleBuffer)
             
-            // 顔認識
+            // ジェスチャー認識
             image = self.detector.recognizeGesture(image)
             
             // 表示
             self.imageView.image = image
+            
+            if !self.isGestureEnabled {
+                return
+            }
+            
+            var gestureType = Int(self.detector.getGestureType())
+            if gestureType == 1 {
+                self.arrowImageView.image = UIImage(named: "arrowR.png")
+            } else {
+                self.arrowImageView.image = UIImage(named: "arrowL.png")
+            }
         })
     }
 }
-

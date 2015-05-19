@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA1350911B09B5B500EED529 /* arrowR.png in Resources */ = {isa = PBXBuildFile; fileRef = AA1350901B09B5B500EED529 /* arrowR.png */; };
+		AA1350931B09B8F400EED529 /* arrowL.png in Resources */ = {isa = PBXBuildFile; fileRef = AA1350921B09B8F400EED529 /* arrowL.png */; };
 		AA1C1C901B05C94800501D53 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1C1C8F1B05C94800501D53 /* AppDelegate.swift */; };
 		AA1C1C921B05C94800501D53 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1C1C911B05C94800501D53 /* ViewController.swift */; };
 		AA1C1C951B05C94800501D53 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA1C1C931B05C94800501D53 /* Main.storyboard */; };
@@ -33,6 +35,8 @@
 		4923299168ED4E01B5396646 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		934066120058486BA48BEB7D /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9D6DF8F9178149AF01F9C485 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
+		AA1350901B09B5B500EED529 /* arrowR.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = arrowR.png; sourceTree = "<group>"; };
+		AA1350921B09B8F400EED529 /* arrowL.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = arrowL.png; sourceTree = "<group>"; };
 		AA1C1C8A1B05C94800501D53 /* OpenCVTutorial.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenCVTutorial.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA1C1C8E1B05C94800501D53 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AA1C1C8F1B05C94800501D53 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -108,6 +112,8 @@
 		AA1C1C8C1B05C94800501D53 /* OpenCVTutorial */ = {
 			isa = PBXGroup;
 			children = (
+				AA1350921B09B8F400EED529 /* arrowL.png */,
+				AA1350901B09B5B500EED529 /* arrowR.png */,
 				AAE6C7EA1B05DC55002902C1 /* haarcascade_frontalface_alt.xml */,
 				AA1C1C8F1B05C94800501D53 /* AppDelegate.swift */,
 				AA1C1C911B05C94800501D53 /* ViewController.swift */,
@@ -230,8 +236,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA1C1C951B05C94800501D53 /* Main.storyboard in Resources */,
+				AA1350931B09B8F400EED529 /* arrowL.png in Resources */,
 				AA1C1C9A1B05C94800501D53 /* LaunchScreen.xib in Resources */,
 				AAE6C7EB1B05DC55002902C1 /* haarcascade_frontalface_alt.xml in Resources */,
+				AA1350911B09B5B500EED529 /* arrowR.png in Resources */,
 				AA1C1C971B05C94800501D53 /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -20,6 +20,9 @@ using namespace cv;
     Mat curr;
     Mat prev;
     Ptr<BackgroundSubtractor> pMOG2;
+    cv::Point prevCenter;
+    float delta;
+    GestureType gestureType;
 }
 @end
 
@@ -29,6 +32,7 @@ using namespace cv;
     self = [super init];
     
     pMOG2 = new BackgroundSubtractorMOG2(1, 0, false);
+    gestureType = GestureType::RIGHT;
     
     return self;
 }
@@ -73,6 +77,7 @@ using namespace cv;
     }
     
     
+    
     // cv::Mat -> UIImage変換
     UIImage *resultImage = MatToUIImage(mat);
     
@@ -83,73 +88,65 @@ using namespace cv;
     // UIImage -> cv::Mat変換
     frame = [self cvMatFromUIImage:image];
     
-    pMOG2->operator()(frame, curr, 0.9);
+    // 背景差分法
+    pMOG2->operator()(frame, curr, 0.8);
     
-    //輪郭の座標リスト
-    std::vector< std::vector< cv::Point > > contours;
+    // ノイズ除去
+    Mat gaussian;
+    GaussianBlur(curr, gaussian, Size2f(9, 9), 5);
+
+    // 2値化
+    Mat bin;
+    threshold(gaussian, bin, 200, 255, cv::THRESH_BINARY);
+
+    // 重心計算
+    IplImage binImg = bin;
+    CvMoments moment;
+    cvMoments(&binImg, &moment);
+    cv::Point currCenter;
+    double m00 = cvGetSpatialMoment(&moment, 0,0);
+    currCenter.x = cvGetSpatialMoment(&moment, 1,0) / m00;
+    currCenter.y = cvGetSpatialMoment(&moment, 0,1) / m00;
+    cv::circle(bin, currCenter, 50, cv::Scalar(80,80,255), 3, 8, 0);
     
-    //輪郭取得
-    Mat contourImg = curr.clone();
-    ////cv::findContours(binImage, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-    cv::findContours(contourImg, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
-    
-    // 検出された輪郭線を緑で描画
-    for (auto contour = contours.begin(); contour != contours.end(); contour++){
-//        cv::polylines(curr, *contour, true, cv::Scalar(0, 255, 0), 2);
-    }
-    
-    //輪郭の数
-    int roiCnt = 0;
-    
-    //輪郭のカウント
-    int i = 0;
-    
-    /*
-    for (auto contour = contours.begin(); contour != contours.end(); contour++){
+    if (abs(currCenter.x - prevCenter.x) > 200 && prevCenter.x != 0 && currCenter.x != 0) {
+        double dx = currCenter.x - prevCenter.x;
+        double dy = currCenter.y - prevCenter.y;
+        double angle = atan2(dy, dx) * 180 / M_PI;
+        prevCenter = cv::Point(0, 0);
+        NSLog(@"x=%d, y=%d", currCenter.x, currCenter.y);
+        NSLog(@"angle=%f", angle);
         
-        std::vector< cv::Point > approx;
-        
-        //輪郭を直線近似する
-        cv::approxPolyDP(cv::Mat(*contour), approx, 0.01 * cv::arcLength(*contour, true), true);
-        
-        // 近似の面積が一定以上なら取得
-        double area = cv::contourArea(approx);
-        
-        if (area > 1000.0){
-            //青で囲む場合
-            cv::polylines(imgIn, approx, true, cv::Scalar(255, 0, 0), 2);
-            std::stringstream sst;
-            sst << "area : " << area;
-            cv::putText(imgIn, sst.str(), approx[0], CV_FONT_HERSHEY_PLAIN, 1.0, cv::Scalar(0, 128, 0));
-            
-            //輪郭に隣接する矩形の取得
-            cv::Rect brect = cv::boundingRect(cv::Mat(approx).reshape(2));
-            roi[roiCnt] = cv::Mat(imgIn, brect);
-            
-            //入力画像に表示する場合
-            //cv::drawContours(imgIn, contours, i, CV_RGB(0, 0, 255), 4);
-            
-            //表示
-            cv::imshow("label" + std::to_string(roiCnt+1), roi[roiCnt]);
-            
-            roiCnt++;
-            
-            //念のため輪郭をカウント
-            if (roiCnt == 99)
-            {
-                break;
-            }
+        if (angle > -90.0 && angle < 90.0) {
+            gestureType = GestureType::LEFT;
+        } else if ((angle > 90.0 && angle < 180.0) || (angle > -180.0 && angle < -90.0)) {
+            gestureType = GestureType::RIGHT;
         }
-        
-        i++;
     }
-     */
     
+    // 初期座標更新
+    if (prevCenter.x == 0 && currCenter.x != 0) {
+        prevCenter = currCenter;
+        delta = 0;
+    }
+    
+    // 一定時間経過後リセット
+    if (++delta > 20.0) {
+        prevCenter = cv::Point(0, 0);
+        delta = 0;
+    }
+
     // cv::Mat -> UIImage変換
-    UIImage *resultImage = MatToUIImage(curr);
+    UIImage *resultImage = MatToUIImage(bin);
     
     return resultImage;
 }
+
+- (GestureType)getGestureType
+{
+    return gestureType;
+}
+
 
 - (cv::Mat)cvMatFromUIImage:(UIImage *)image
 {
