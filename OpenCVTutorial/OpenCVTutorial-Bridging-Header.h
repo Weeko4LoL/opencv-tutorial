@@ -10,7 +10,6 @@ enum GestureType {LEFT, RIGHT};
 @interface Detector: NSObject
 
 - (id)init;
-- (UIImage *)recognizeFace:(UIImage *)image;
 - (UIImage *)recognizeGesture:(UIImage *)image;
 - (int)getGestureType;
 

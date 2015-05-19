@@ -15,11 +15,10 @@ using namespace cv;
 
 @interface Detector()
 {
-    cv::CascadeClassifier cascade;
     Mat frame;
     Mat curr;
     Mat prev;
-    Ptr<BackgroundSubtractor> pMOG2;
+    Ptr<BackgroundSubtractor> bgs;
     cv::Point prevCenter;
     float delta;
     GestureType gestureType;
@@ -31,57 +30,10 @@ using namespace cv;
 - (id)init {
     self = [super init];
     
-    pMOG2 = new BackgroundSubtractorMOG2(1, 0, false);
+    bgs = new BackgroundSubtractorMOG2(0, 0, false);
     gestureType = GestureType::RIGHT;
     
     return self;
-}
-
-- (UIImage *)recognizeFace:(UIImage *)image {
-    // UIImage -> cv::Mat変換
-    CGColorSpaceRef colorSpace = CGImageGetColorSpace(image.CGImage);
-    CGFloat cols = image.size.width;
-    CGFloat rows = image.size.height;
-    
-    cv::Mat mat(rows, cols, CV_8UC4);
-    
-
-    CGContextRef contextRef = CGBitmapContextCreate(mat.data,
-                                                    cols,
-                                                    rows,
-                                                    8,
-                                                    mat.step[0],
-                                                    colorSpace,
-                                                    kCGImageAlphaNoneSkipLast |
-                                                    kCGBitmapByteOrderDefault);
-    
-    CGContextDrawImage(contextRef, CGRectMake(0, 0, cols, rows), image.CGImage);
-    CGContextRelease(contextRef);
-    
-    // 顔検出
-    std::vector<cv::Rect> faces;
-    cascade.detectMultiScale(mat, faces,
-                             1.1, 2,
-                             CV_HAAR_SCALE_IMAGE,
-                             cv::Size(30, 30));
-    
-    // 顔の位置に丸を描く
-    std::vector<cv::Rect>::const_iterator r = faces.begin();
-    for(; r != faces.end(); ++r) {
-        cv::Point center;
-        int radius;
-        center.x = cv::saturate_cast<int>((r->x + r->width*0.5));
-        center.y = cv::saturate_cast<int>((r->y + r->height*0.5));
-        radius = cv::saturate_cast<int>((r->width + r->height));
-        cv::circle(mat, center, radius, cv::Scalar(80,80,255), 3, 8, 0 );
-    }
-    
-    
-    
-    // cv::Mat -> UIImage変換
-    UIImage *resultImage = MatToUIImage(mat);
-    
-    return resultImage;
 }
 
 - (UIImage *)recognizeGesture:(UIImage *)image {
@@ -89,27 +41,47 @@ using namespace cv;
     frame = [self cvMatFromUIImage:image];
     
     // 背景差分法
-    pMOG2->operator()(frame, curr, 0.8);
+    bgs->operator()(frame, curr, 0.8);
     
     // ノイズ除去
     Mat gaussian;
     GaussianBlur(curr, gaussian, Size2f(9, 9), 5);
-
+    
     // 2値化
     Mat bin;
     threshold(gaussian, bin, 200, 255, cv::THRESH_BINARY);
-
-    // 重心計算
-    IplImage binImg = bin;
-    CvMoments moment;
-    cvMoments(&binImg, &moment);
-    cv::Point currCenter;
-    double m00 = cvGetSpatialMoment(&moment, 0,0);
-    currCenter.x = cvGetSpatialMoment(&moment, 1,0) / m00;
-    currCenter.y = cvGetSpatialMoment(&moment, 0,1) / m00;
-    cv::circle(bin, currCenter, 50, cv::Scalar(80,80,255), 3, 8, 0);
     
-    if (abs(currCenter.x - prevCenter.x) > 200 && prevCenter.x != 0 && currCenter.x != 0) {
+    std::vector<std::vector<cv::Point> > contours;
+    std::vector<cv::Vec4i> hierarchy;
+    // 2値画像，輪郭（出力），階層構造（出力），輪郭抽出モード，輪郭の近似手法
+    cv::findContours(bin.clone(), contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    
+    std::vector<cv::Point> points;
+    for (auto contour : contours) {
+        points.push_back(contour.at(0));
+    }
+        
+    // 重心計算
+    /*
+     IplImage binImg = brect;
+     CvMoments moment;
+     cvMoments(&binImg, &moment);
+     cv::Point currCenter;
+     double m00 = cvGetSpatialMoment(&moment, 0,0);
+     currCenter.x = cvGetSpatialMoment(&moment, 1,0) / m00;
+     currCenter.y = cvGetSpatialMoment(&moment, 0,1) / m00;
+     */
+    cv::Point currCenter;
+    if (points.size() > 10) {
+        cv::Rect brect = cv::boundingRect(cv::Mat(points).reshape(2));
+//        cv::rectangle(frame, brect.tl(), brect.br(), cv::Scalar(0, 255, 0), 5, CV_AA);
+        currCenter.x = brect.tl().x + (brect.br().x - brect.tl().x) / 2;
+        currCenter.y = brect.tl().y + (brect.br().y - brect.tl().y) / 2;
+    }
+    
+//    cv::circle(frame, currCenter, 50, cv::Scalar(255, 0, 0), 3, 8, 0);
+    
+    if (abs(currCenter.x - prevCenter.x) > 100 && prevCenter.x != 0 && currCenter.x != 0) {
         double dx = currCenter.x - prevCenter.x;
         double dy = currCenter.y - prevCenter.y;
         double angle = atan2(dy, dx) * 180 / M_PI;

@@ -35,7 +35,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
         motionManager.startDeviceMotionUpdatesToQueue( NSOperationQueue.currentQueue(), withHandler:{
             deviceManager, error in
             var accel: CMAcceleration = deviceManager.userAcceleration
-            if pow(accel.x, 2) + pow(accel.y, 2) + pow(accel.z, 2) > 1 / 100 {
+            if pow(accel.x, 2) + pow(accel.y, 2) + pow(accel.z, 2) > 1 / 1000 {
                 self.isGestureEnabled = false
             } else {
                 self.isGestureEnabled = true
@@ -80,7 +80,7 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
                 println("lock error: \(error.localizedDescription)")
                 return false
             } else {
-                myDevice.activeVideoMinFrameDuration = CMTimeMake(1, 8)
+                myDevice.activeVideoMinFrameDuration = CMTimeMake(1, 60)
                 myDevice.unlockForConfiguration()
             }
         }
@@ -107,11 +107,18 @@ class ViewController: UIViewController, AVCaptureVideoDataOutputSampleBufferDele
             }
         }
         
+        var previewLayer = AVCaptureVideoPreviewLayer(session: mySession)
+        previewLayer.frame = self.view.bounds
+        previewLayer.contentsGravity = kCAGravityResizeAspectFill
+        previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill
+//        self.view.layer.insertSublayer(previewLayer, atIndex: 0)
+        
         return true
     }
     
     func captureOutput(captureOutput: AVCaptureOutput!, didOutputSampleBuffer sampleBuffer: CMSampleBuffer!, fromConnection connection: AVCaptureConnection!) {
         dispatch_sync(dispatch_get_main_queue(), {
+
             // UIImageへ変換
             var image: UIImage = CameraUtil.imageFromSampleBuffer(sampleBuffer)
             
